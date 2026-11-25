@@ -1,0 +1,221 @@
+======================================================================
+  RESOLUCAO DE PROBLEMAS POR BUSCA - INTELIGENCIA ARTIFICIAL
+  IFPI - Campus Teresina Zona Sul
+======================================================================
+
+======================================================================
+  DOMINIO 1: ROTEAMENTO RODOVIARIO NO PIAUI
+======================================================================
+Origem: São Raimundo Nonato  -->  Destino: Parnaíba
+
+--------------------------------------------------
+[BFS] Busca em Largura
+Caminho: São Raimundo Nonato -> Simplício Mendes -> Oeiras -> Picos -> Valença do Piauí -> Campo Maior -> Piripiri -> Parnaíba
+Custo: 875
+Nos expandidos: 16
+Tempo: 0.000024s
+
+--------------------------------------------------
+[DFS] Busca em Profundidade
+Caminho: São Raimundo Nonato -> Canto do Buriti -> Floriano -> Amarante -> Teresina -> Campo Maior -> Piripiri -> Parnaíba
+Custo: 880
+Nos expandidos: 9
+Tempo: 0.000018s
+
+--------------------------------------------------
+[GULOSA] Busca Gulosa
+Caminho: São Raimundo Nonato -> Simplício Mendes -> Oeiras -> Picos -> Valença do Piauí -> Campo Maior -> Piripiri -> Parnaíba
+Custo: 875
+Nos expandidos: 8
+Tempo: 0.000024s
+
+--------------------------------------------------
+[A*] Busca A*
+Caminho: São Raimundo Nonato -> Simplício Mendes -> Oeiras -> Picos -> Valença do Piauí -> Campo Maior -> Piripiri -> Parnaíba
+Custo: 875
+Nos expandidos: 17
+Tempo: 0.000030s
+
+======================================================================
+  TABELA COMPARATIVA - CIDADES DO PIAUI
+======================================================================
+| Algoritmo  | Rota                                                    | Custo (km)   | Nos Expandidos  | Tempo (s)    |
+|------------|---------------------------------------------------------|--------------|-----------------|--------------|
+| BFS        | São Raimundo Nonato -> Simplício Mendes -> Oeiras -> Pi | 875          | 16              | 0.000024     |
+| DFS        | São Raimundo Nonato -> Canto do Buriti -> Floriano -> A | 880          | 9               | 0.000018     |
+| Gulosa     | São Raimundo Nonato -> Simplício Mendes -> Oeiras -> Pi | 875          | 8               | 0.000024     |
+| A*         | São Raimundo Nonato -> Simplício Mendes -> Oeiras -> Pi | 875          | 17              | 0.000030     |
+
+======================================================================
+  DOMINIO 2: JOGO DOS 8 NUMEROS (8-PUZZLE)
+======================================================================
+Estado objetivo:
+1 2 3
+4 5 6
+7 8 _
+
+
+======================================================================
+  8-PUZZLE - Profundidade aproximada d ~ 5
+======================================================================
+Estado inicial:
+2 _ 3
+1 5 6
+4 7 8
+Solucionavel: True
+
+--------------------------------------------------
+[BFS] Busca em Largura
+Movimentos: 5, Nos expandidos: 23, Tempo: 0.000046s
+
+--------------------------------------------------
+[DFS] Busca em Profundidade
+Nao encontrou solucao (limite=30), Nos expandidos: 15136, Tempo: 0.016159s
+
+--------------------------------------------------
+[GULOSA h1] Busca Gulosa (pecas fora do lugar)
+Movimentos: 5, Nos expandidos: 6, Tempo: 0.000034s
+
+--------------------------------------------------
+[GULOSA h2] Busca Gulosa (Manhattan)
+Movimentos: 5, Nos expandidos: 6, Tempo: 0.000035s
+
+--------------------------------------------------
+[A* h1] Busca A* (pecas fora do lugar)
+Movimentos: 5, Nos expandidos: 6, Tempo: 0.000022s
+
+--------------------------------------------------
+[A* h2] Busca A* (Manhattan)
+Movimentos: 5, Nos expandidos: 6, Tempo: 0.000028s
+
+======================================================================
+  8-PUZZLE - Profundidade aproximada d ~ 10
+======================================================================
+Estado inicial:
+_ 1 2
+4 5 8
+7 6 3
+Solucionavel: True
+
+--------------------------------------------------
+[BFS] Busca em Largura
+Movimentos: 10, Nos expandidos: 323, Tempo: 0.000456s
+
+--------------------------------------------------
+[DFS] Busca em Profundidade
+Movimentos: 22, Nos expandidos: 6077, Tempo: 0.007720s
+
+--------------------------------------------------
+[GULOSA h1] Busca Gulosa (pecas fora do lugar)
+Movimentos: 32, Nos expandidos: 209, Tempo: 0.000841s
+
+--------------------------------------------------
+[GULOSA h2] Busca Gulosa (Manhattan)
+Movimentos: 34, Nos expandidos: 96, Tempo: 0.000537s
+
+--------------------------------------------------
+[A* h1] Busca A* (pecas fora do lugar)
+Movimentos: 10, Nos expandidos: 40, Tempo: 0.000149s
+
+--------------------------------------------------
+[A* h2] Busca A* (Manhattan)
+Movimentos: 10, Nos expandidos: 17, Tempo: 0.000087s
+
+======================================================================
+  8-PUZZLE - Profundidade aproximada d ~ 15
+======================================================================
+Estado inicial:
+3 4 2
+_ 1 6
+5 7 8
+Solucionavel: True
+
+--------------------------------------------------
+[BFS] Busca em Largura
+Movimentos: 15, Nos expandidos: 3625, Tempo: 0.005807s
+
+--------------------------------------------------
+[DFS] Busca em Profundidade
+Movimentos: 29, Nos expandidos: 129817, Tempo: 0.193271s
+
+--------------------------------------------------
+[GULOSA h1] Busca Gulosa (pecas fora do lugar)
+Movimentos: 39, Nos expandidos: 561, Tempo: 0.002348s
+
+--------------------------------------------------
+[GULOSA h2] Busca Gulosa (Manhattan)
+Movimentos: 25, Nos expandidos: 293, Tempo: 0.001406s
+
+--------------------------------------------------
+[A* h1] Busca A* (pecas fora do lugar)
+Movimentos: 15, Nos expandidos: 407, Tempo: 0.001391s
+
+--------------------------------------------------
+[A* h2] Busca A* (Manhattan)
+Movimentos: 15, Nos expandidos: 110, Tempo: 0.000526s
+
+======================================================================
+  TABELA COMPARATIVA - 8-PUZZLE
+======================================================================
+| Algoritmo    | d     | Movimentos   | Nos Expandidos  | Tempo (s)    |
+|--------------|-------|--------------|-----------------|--------------|
+| BFS          | 5     | 5            | 23              | 0.000046     |
+| DFS          | 5     | N/A          | 15136           | 0.016159     |
+| Gulosa h1    | 5     | 5            | 6               | 0.000034     |
+| Gulosa h2    | 5     | 5            | 6               | 0.000035     |
+| A* h1        | 5     | 5            | 6               | 0.000022     |
+| A* h2        | 5     | 5            | 6               | 0.000028     |
+|--------------|-------|--------------|-----------------|--------------|
+| BFS          | 10    | 10           | 323             | 0.000456     |
+| DFS          | 10    | 22           | 6077            | 0.007720     |
+| Gulosa h1    | 10    | 32           | 209             | 0.000841     |
+| Gulosa h2    | 10    | 34           | 96              | 0.000537     |
+| A* h1        | 10    | 10           | 40              | 0.000149     |
+| A* h2        | 10    | 10           | 17              | 0.000087     |
+|--------------|-------|--------------|-----------------|--------------|
+| BFS          | 15    | 15           | 3625            | 0.005807     |
+| DFS          | 15    | 29           | 129817          | 0.193271     |
+| Gulosa h1    | 15    | 39           | 561             | 0.002348     |
+| Gulosa h2    | 15    | 25           | 293             | 0.001406     |
+| A* h1        | 15    | 15           | 407             | 0.001391     |
+| A* h2        | 15    | 15           | 110             | 0.000526     |
+|--------------|-------|--------------|-----------------|--------------|
+
+======================================================================
+  COMPARACAO A* : h1 (pecas fora) vs h2 (Manhattan)
+======================================================================
+| d     | Nos A* h1       | Nos A* h2       | Tempo A* h1     | Tempo A* h2     |
+|-------|-----------------|-----------------|-----------------|-----------------|
+| 5     | 6               | 6               | 0.000022        | 0.000028        |
+| 10    | 40              | 17              | 0.000149        | 0.000087        |
+| 15    | 407             | 110             | 0.001391        | 0.000526        |
+
+======================================================================
+  ANALISE FINAL
+======================================================================
+
+COMPLETUDE:
+- BFS: Completa (encontra solucao se existir, para grafos finitos).
+- DFS: Completa com controle de visitados em grafos finitos (pode nao
+  terminar em espacos infinitos sem limite de profundidade).
+- Gulosa: Incompleta (pode entrar em ciclos sem controle de visitados;
+  com visitados, completa em espacos finitos).
+- A*: Completa (com heuristica admissivel e espaco finito).
+
+OTIMALIDADE:
+- BFS: Otima quando todos os custos de aresta sao iguais (8-Puzzle).
+  No problema de cidades (custos variaveis), NAO garante otimalidade.
+- DFS: NAO e otima - pode encontrar caminhos subotimos.
+- Gulosa: NAO e otima - ignora o custo acumulado g(n).
+- A*: OTIMA quando a heuristica h(n) e admissivel (nunca superestima).
+  As distancias em linha reta sao admissiveis para cidades, e ambas
+  h1 e h2 sao admissiveis para o 8-Puzzle.
+
+COMPARACAO h1 vs h2 NO A*:
+- h2 (Manhattan) domina h1 (pecas fora do lugar): h2(n) >= h1(n) para
+  todo estado n. Isso significa que h2 e mais informativa.
+- Como consequencia, A* com h2 expande significativamente MENOS nos
+  que A* com h1, mantendo a mesma solucao otima.
+- A diferenca se torna mais pronunciada em estados com maior
+  profundidade de solucao.
+
