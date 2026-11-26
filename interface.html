@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Algoritmos de Busca - IA (IFPI)</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0f0f1a;--surface:#1a1a2e;--card:#22223a;--border:#2e2e4a;
+  --text:#e0e0f0;--muted:#8888aa;--accent:#6c63ff;
+  --blue:#4fa3ff;--green:#4ade80;--red:#f87171;--yellow:#fbbf24;
+  --orange:#fb923c;--purple:#a78bfa;--cyan:#22d3ee;
+  --expanding:#f87171;--visited:#4ade80;--frontier:#fbbf24;--path:#4fa3ff;
+}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+.header{text-align:center;padding:20px 0 10px;background:linear-gradient(135deg,#1a1a2e,#16213e)}
+.header h1{font-size:1.6rem;font-weight:700;background:linear-gradient(135deg,var(--blue),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header p{color:var(--muted);font-size:.85rem;margin-top:4px}
+
+.tabs{display:flex;justify-content:center;gap:8px;padding:12px 0;background:var(--surface);border-bottom:1px solid var(--border)}
+.tab-btn{padding:10px 28px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;font-size:.95rem;font-weight:600;transition:all .2s}
+.tab-btn:hover{border-color:var(--accent);color:var(--text)}
+.tab-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+.tab-content{display:none;padding:16px 24px}
+.tab-content.active{display:flex;gap:20px;max-width:1400px;margin:0 auto}
+
+.panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;flex-shrink:0}
+.panel h2{font-size:1.05rem;font-weight:700;margin-bottom:12px;color:var(--blue)}
+
+.map-panel{flex:1;min-width:0}
+#mapSvg,#exSvg{width:100%;height:520px;border-radius:8px;background:var(--surface)}
+
+.controls-panel{width:320px}
+.info-box{background:var(--surface);border-radius:8px;padding:12px;margin-bottom:12px;font-size:.85rem;line-height:1.6}
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.legend-item{display:flex;align-items:center;gap:4px;font-size:.75rem;color:var(--muted)}
+.legend-dot{width:10px;height:10px;border-radius:50%}
+
+.btn-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.btn{padding:10px 16px;border:none;border-radius:8px;font-weight:700;font-size:.9rem;cursor:pointer;transition:all .15s;color:#111}
+.btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.3)}
+.btn:active{transform:translateY(0)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn[data-tip]{position:relative}
+.btn[data-tip]::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);
+  background:#111;color:var(--text);font-size:.75rem;font-weight:400;padding:8px 12px;border-radius:8px;
+  white-space:normal;width:220px;text-align:center;pointer-events:none;opacity:0;transition:opacity .2s;
+  z-index:100;box-shadow:0 4px 16px rgba(0,0,0,.5);border:1px solid var(--border);line-height:1.4}
+.btn[data-tip]:hover::after{opacity:1}
+.btn-bfs{background:var(--blue)}.btn-dfs{background:var(--purple)}
+.btn-gulosa{background:var(--orange)}.btn-astar{background:var(--green)}
+.btn-full{grid-column:1/-1;background:var(--accent);color:#fff}
+
+.speed-control{margin-bottom:12px}
+.speed-control label{font-size:.8rem;color:var(--muted);display:block;margin-bottom:4px}
+.speed-control input[type=range]{width:100%;accent-color:var(--accent)}
+
+.results-table{width:100%;border-collapse:collapse;font-size:.82rem;margin-top:8px}
+.results-table th{text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-weight:600}
+.results-table td{padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.04)}
+.results-table tr:hover td{background:rgba(108,99,255,.08)}
+.results-table tr.selected td{background:rgba(79,163,255,.15)}
+
+.status-bar{background:var(--surface);border-radius:8px;padding:10px 14px;margin-top:8px;font-size:.82rem;color:var(--muted);min-height:60px;line-height:1.5;max-height:300px;overflow-y:auto}
+
+.puzzle-panel{flex:1;display:flex;flex-direction:column;align-items:center}
+.puzzle-board{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:300px;height:300px;margin:16px 0}
+.puzzle-cell{display:flex;align-items:center;justify-content:center;border-radius:12px;font-size:2rem;font-weight:800;transition:all .2s;user-select:none}
+.puzzle-cell.correct{background:linear-gradient(135deg,#1a4a2a,#1a3a2a);color:var(--green);box-shadow:0 2px 8px rgba(74,222,128,.15)}
+.puzzle-cell.wrong{background:linear-gradient(135deg,#4a1a1a,#3a1a1a);color:var(--red);box-shadow:0 2px 8px rgba(248,113,113,.15)}
+.puzzle-cell.empty{background:var(--surface);border:2px dashed var(--border)}
+
+.puzzle-controls{width:360px}
+.radio-group{display:flex;gap:8px;margin-bottom:12px}
+.radio-btn{flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;font-size:.85rem;font-weight:600;text-align:center;transition:all .2s}
+.radio-btn:hover{border-color:var(--accent)}
+.radio-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+.puzzle-btn-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
+
+.step-info{text-align:center;font-size:.85rem;color:var(--muted);margin:4px 0}
+
+.tip-box{background:linear-gradient(135deg,#1a1a3e,#1e1e38);border:1px solid var(--purple);border-radius:8px;padding:12px;margin-bottom:12px;font-size:.82rem;line-height:1.6;color:var(--purple)}
+.tip-box strong{color:var(--yellow)}
+
+.play-panel{flex:1;display:flex;flex-direction:column;align-items:center;max-width:500px;margin:0 auto}
+.play-board{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:340px;height:340px;margin:20px 0}
+.play-cell{display:flex;align-items:center;justify-content:center;border-radius:14px;font-size:2.4rem;font-weight:800;
+  user-select:none;cursor:pointer;transition:all .15s}
+.play-cell:hover:not(.empty){transform:scale(1.05);box-shadow:0 4px 16px rgba(108,99,255,.3)}
+.play-cell:active:not(.empty){transform:scale(.95)}
+.play-cell.correct{background:linear-gradient(135deg,#1a4a2a,#1a3a2a);color:var(--green);box-shadow:0 2px 8px rgba(74,222,128,.15)}
+.play-cell.wrong{background:linear-gradient(135deg,#2a2a4a,#22223a);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.play-cell.empty{background:var(--surface);border:2px dashed var(--border);cursor:default}
+.play-cell.movable{box-shadow:0 0 12px rgba(108,99,255,.4);border:2px solid var(--accent)}
+.play-stats{display:flex;gap:24px;margin:12px 0;font-size:1rem}
+.play-stat{text-align:center}
+.play-stat .val{font-size:2rem;font-weight:800;color:var(--blue)}
+.play-stat .label{font-size:.75rem;color:var(--muted)}
+.play-msg{font-size:1.1rem;color:var(--muted);margin:8px 0;min-height:30px;text-align:center}
+.play-msg.win{color:var(--green);font-weight:700;font-size:1.3rem}
+.shuffle-group{display:flex;gap:8px;margin:8px 0;flex-wrap:wrap;justify-content:center}
+
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+.pulsing{animation:pulse .8s infinite}
+
+@media(max-width:900px){
+  .tab-content.active{flex-direction:column}
+  .controls-panel,.puzzle-controls{width:100%}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Algoritmos de Busca - Inteligencia Artificial</h1>
+  <p>IFPI - Visualizacao Interativa de BFS, DFS, Busca Gulosa e A*</p>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn" onclick="switchTab('exemplo',this)">Cenario Didatico</button>
+  <button class="tab-btn active" onclick="switchTab('cidades',this)">Cidades do Piaui</button>
+  <button class="tab-btn" onclick="switchTab('puzzle',this)">8-Puzzle</button>
+  <button class="tab-btn" onclick="switchTab('jogar',this)">Jogar Puzzle</button>
+</div>
+
+<!-- ============ ABA CENARIO DIDATICO ============ -->
+<div id="tab-exemplo" class="tab-content">
+  <div class="panel map-panel">
+    <h2>Cenario Armadilha - Comparacao de Algoritmos</h2>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--expanding)"></div>Expandindo</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--visited)"></div>Visitado</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--frontier)"></div>Fronteira</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--path)"></div>Rota Final</div>
+    </div>
+    <svg id="exSvg" viewBox="0 0 700 400"></svg>
+    <div id="exStatus" class="step-info"></div>
+  </div>
+
+  <div class="panel controls-panel">
+    <h2>Controles</h2>
+    <div class="tip-box">
+      <strong>Cenario com armadilhas!</strong><br>
+      <strong>Gulosa:</strong> "Atalho" parece perto (h=3) mas a Serra custa 15.<br>
+      <strong>DFS:</strong> Pode se perder na Trilha/Caverna/Mina (becos sem saida).<br>
+      <strong>BFS:</strong> Explora tudo nivel a nivel, expande muitos nos.
+    </div>
+    <div class="info-box">
+      <strong>Origem:</strong> Inicio<br>
+      <strong>Destino:</strong> Destino<br>
+      <strong>Caminho otimo:</strong> Inicio &rarr; Rodovia &rarr; Planicie &rarr; Ponte &rarr; Destino = <strong>11</strong>
+    </div>
+
+    <div class="speed-control">
+      <label>Velocidade: <span id="exSpeedLabel">700ms</span></label>
+      <input type="range" id="exSpeedSlider" min="200" max="2000" value="700" step="100"
+             oninput="document.getElementById('exSpeedLabel').textContent=this.value+'ms'">
+    </div>
+
+    <div class="btn-grid">
+      <button class="btn btn-bfs" onclick="runEx('BFS')" data-tip="Busca em Largura: explora nivel por nivel. Completa e otima em grafos sem peso.">BFS</button>
+      <button class="btn btn-dfs" onclick="runEx('DFS')" data-tip="Busca em Profundidade: vai fundo em um caminho antes de tentar outros. Pode se perder em becos sem saida.">DFS</button>
+      <button class="btn btn-gulosa" onclick="runEx('Gulosa')" data-tip="Busca Gulosa: escolhe o no que parece mais perto do destino (menor h). Rapida mas pode ser enganada pela heuristica.">Gulosa</button>
+      <button class="btn btn-astar" onclick="runEx('A*')" data-tip="A*: combina custo real (g) + estimativa (h). Sempre encontra o caminho otimo com heuristica admissivel.">A*</button>
+      <button class="btn btn-full" onclick="runAllEx()">Executar Todos</button>
+    </div>
+
+    <h2>Resultados</h2>
+    <table class="results-table">
+      <thead><tr><th>Algo</th><th>Custo</th><th>Nos</th><th>Otimo?</th></tr></thead>
+      <tbody id="exResults"></tbody>
+    </table>
+
+    <div id="exInfo" class="status-bar">Execute os algoritmos e compare os caminhos encontrados.</div>
+  </div>
+</div>
+
+<!-- ============ ABA CIDADES ============ -->
+<div id="tab-cidades" class="tab-content active">
+  <div class="panel map-panel">
+    <h2>Mapa Rodoviario do Piaui</h2>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--expanding)"></div>Expandindo</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--visited)"></div>Visitado</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--frontier)"></div>Fronteira</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--path)"></div>Rota Final</div>
+    </div>
+    <svg id="mapSvg" viewBox="0 0 620 560"></svg>
+    <div id="cityStatus" class="step-info"></div>
+  </div>
+
+  <div class="panel controls-panel">
+    <h2>Controles</h2>
+    <div class="info-box">
+      <strong>Origem:</strong> <span id="origem"></span><br>
+      <strong>Destino:</strong> <span id="destino"></span>
+    </div>
+
+    <div class="speed-control">
+      <label>Velocidade da animacao: <span id="speedLabel">500ms</span></label>
+      <input type="range" id="speedSlider" min="50" max="1500" value="500" step="50"
+             oninput="document.getElementById('speedLabel').textContent=this.value+'ms'">
+    </div>
+
+    <div class="btn-grid">
+      <button class="btn btn-bfs" onclick="runCity('BFS')" data-tip="Busca em Largura: explora nivel por nivel. Completa e otima em grafos sem peso.">BFS</button>
+      <button class="btn btn-dfs" onclick="runCity('DFS')" data-tip="Busca em Profundidade: vai fundo em um caminho antes de tentar outros. Pode se perder em becos sem saida.">DFS</button>
+      <button class="btn btn-gulosa" onclick="runCity('Gulosa')" data-tip="Busca Gulosa: f(n) = h(n). Escolhe o no com menor distancia em linha reta ate o destino. Rapida mas nao garante otimo.">Gulosa</button>
+      <button class="btn btn-astar" onclick="runCity('A*')" data-tip="A*: f(n) = g(n) + h(n). Combina custo real + estimativa. Sempre encontra o caminho mais barato.">A*</button>
+      <button class="btn btn-full" onclick="runAllCities()">Executar Todos</button>
+    </div>
+
+    <h2>Resultados</h2>
+    <table class="results-table">
+      <thead><tr><th>Algo</th><th>Custo</th><th>Nos</th><th>Tempo (ms)</th></tr></thead>
+      <tbody id="cityResults"></tbody>
+    </table>
+
+    <div id="cityInfo" class="status-bar">Clique em um algoritmo para visualizar a busca.</div>
+  </div>
+</div>
+
+<!-- ============ ABA PUZZLE ============ -->
+<div id="tab-puzzle" class="tab-content">
+  <div class="panel puzzle-panel">
+    <h2>8-Puzzle</h2>
+    <div class="radio-group">
+      <button class="radio-btn active" onclick="setDepth(5,this)">d = 5</button>
+      <button class="radio-btn" onclick="setDepth(10,this)">d = 10</button>
+      <button class="radio-btn" onclick="setDepth(15,this)">d = 15</button>
+    </div>
+    <div id="puzzleBoard" class="puzzle-board"></div>
+    <div id="puzzleStep" class="step-info">Estado inicial (d=5)</div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button id="btnAnimSol" class="btn btn-astar" style="font-size:.85rem" onclick="animateSolution()" disabled>Animar Solucao</button>
+      <button class="btn" style="background:var(--yellow);font-size:.85rem" onclick="resetPuzzle()">Reset</button>
+    </div>
+  </div>
+
+  <div class="panel puzzle-controls">
+    <h2>Algoritmos</h2>
+
+    <div class="speed-control">
+      <label>Velocidade: <span id="pSpeedLabel">300ms</span></label>
+      <input type="range" id="pSpeedSlider" min="30" max="1000" value="300" step="30"
+             oninput="document.getElementById('pSpeedLabel').textContent=this.value+'ms'">
+    </div>
+
+    <div class="puzzle-btn-grid">
+      <button class="btn btn-bfs" onclick="runPuzzle('BFS')" data-tip="Busca em Largura: testa todos os estados nivel por nivel. Garante solucao com menos movimentos.">BFS</button>
+      <button class="btn btn-dfs" onclick="runPuzzle('DFS')" data-tip="Busca em Profundidade: vai fundo em um caminho. Pode nao encontrar solucao dentro do limite.">DFS</button>
+      <button class="btn btn-gulosa" onclick="runPuzzle('Gulosa h1')" data-tip="Gulosa com h1 (pecas fora do lugar): conta quantas pecas estao na posicao errada.">Gulosa h1</button>
+      <button class="btn" style="background:var(--yellow)" onclick="runPuzzle('Gulosa h2')" data-tip="Gulosa com h2 (Manhattan): soma a distancia que cada peca precisa andar. Mais precisa que h1.">Gulosa h2</button>
+      <button class="btn btn-astar" onclick="runPuzzle('A* h1')" data-tip="A* com h1 (pecas fora): f(n) = g(n) + h1(n). Otimo, mas expande mais nos que com h2.">A* h1</button>
+      <button class="btn" style="background:var(--red)" onclick="runPuzzle('A* h2')" data-tip="A* com h2 (Manhattan): f(n) = g(n) + h2(n). Melhor combinacao: otimo e eficiente.">A* h2</button>
+      <button class="btn btn-full" style="grid-column:1/-1" onclick="runAllPuzzle()">Executar Todos</button>
+    </div>
+
+    <h2>Resultados</h2>
+    <table class="results-table">
+      <thead><tr><th>Algo</th><th>Movs</th><th>Nos</th><th>Tempo (ms)</th></tr></thead>
+      <tbody id="puzzleResults"></tbody>
+    </table>
+
+    <div id="puzzleInfo" class="status-bar">Selecione profundidade e execute um algoritmo.</div>
+  </div>
+</div>
+
+<!-- ============ ABA JOGAR ============ -->
+<div id="tab-jogar" class="tab-content">
+  <div class="panel play-panel">
+    <h2>Tente Resolver o 8-Puzzle!</h2>
+    <p style="color:var(--muted);font-size:.85rem;text-align:center;margin-bottom:4px">
+      Clique nas pecas adjacentes ao espaco vazio para move-las.
+    </p>
+
+    <div class="shuffle-group">
+      <button class="btn" style="background:var(--green);font-size:.85rem" onclick="shufflePlay(5)">Facil (5)</button>
+      <button class="btn" style="background:var(--yellow);font-size:.85rem" onclick="shufflePlay(15)">Medio (15)</button>
+      <button class="btn" style="background:var(--orange);font-size:.85rem" onclick="shufflePlay(25)">Dificil (25)</button>
+      <button class="btn" style="background:var(--red);font-size:.85rem" onclick="shufflePlay(50)">Insano (50)</button>
+    </div>
+
+    <div id="playBoard" class="play-board"></div>
+
+    <div class="play-stats">
+      <div class="play-stat"><div id="playMoves" class="val">0</div><div class="label">Movimentos</div></div>
+      <div class="play-stat"><div id="playTime" class="val">0s</div><div class="label">Tempo</div></div>
+      <div class="play-stat"><div id="playBest" class="val">-</div><div class="label">Recorde</div></div>
+    </div>
+
+    <div id="playMsg" class="play-msg">Escolha uma dificuldade para embaralhar!</div>
+
+    <div class="shuffle-group">
+      <button class="btn" style="background:var(--accent);color:#fff;font-size:.85rem" onclick="solvePlay()">Ver Solucao (A*)</button>
+      <button class="btn" style="background:var(--purple);color:#111;font-size:.85rem" onclick="resetPlay()">Resetar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============ GLOBALS ============
+let graphData=null, exData=null, puzzleData=null;
+let cityAnimating=false, exAnimating=false, puzzleAnimating=false;
+let cityResultsMap={}, exResultsMap={}, puzzleResultsMap={};
+let currentDepth=5, currentSolution=null;
+
+const COORDS={
+  "São Raimundo Nonato":[120,520],"Canto do Buriti":[200,450],"Simplício Mendes":[250,500],
+  "Floriano":[230,370],"Oeiras":[330,420],"Amarante":[250,290],"Picos":[410,380],
+  "Jaicós":[340,480],"Pio IX":[500,400],"Fronteiras":[540,360],"Valença do Piauí":[380,300],
+  "Teresina":[220,190],"Altos":[270,165],"José de Freitas":[300,140],"Campo Maior":[350,170],
+  "Piripiri":[380,100],"Pedro II":[440,80],"Piracuruca":[490,50],"Batalha":[340,55],
+  "Esperantina":[300,30],"Luzilândia":[350,15],"Parnaíba":[460,10]
+};
+const SHORT={
+  "São Raimundo Nonato":"S.R.Nonato","Simplício Mendes":"S.Mendes",
+  "Valença do Piauí":"Valença","José de Freitas":"J.Freitas","Campo Maior":"C.Maior"
+};
+
+const EX_COORDS={
+  "Inicio":[60,200],
+  "Atalho":[220,70],"Serra":[420,70],"Floresta":[320,55],
+  "Rodovia":[220,200],"Planicie":[400,200],"Ponte":[540,160],"Desvio":[320,280],
+  "Trilha":[120,340],"Caverna":[260,370],"Ruina":[400,370],"Mina":[320,340],"Poco":[400,310],
+  "Destino":[640,120]
+};
+
+const ALGO_INFO = {
+  'BFS': {
+    completo: true, otimo: 'parcial',
+    explicacao_completo: 'Sim: explora todos os niveis, sempre encontra solucao se existir.',
+    explicacao_otimo: 'Apenas em grafos sem peso (custo uniforme). Em grafos com pesos diferentes, encontra o caminho com menos arestas, nao o mais barato.',
+  },
+  'DFS': {
+    completo: false, otimo: false,
+    explicacao_completo: 'Nao: pode se perder em caminhos muito profundos ou becos sem saida e nunca encontrar a solucao.',
+    explicacao_otimo: 'Nao: retorna o primeiro caminho que encontra, que pode ser muito mais caro que o melhor.',
+  },
+  'Gulosa': {
+    completo: false, otimo: false,
+    explicacao_completo: 'Nao: pode entrar em loops ou ficar presa seguindo a heuristica para um beco sem saida.',
+    explicacao_otimo: 'Nao: usa apenas f(n) = h(n), ignorando o custo ja percorrido. Pode ser enganada pela heuristica.',
+  },
+  'A*': {
+    completo: true, otimo: true,
+    explicacao_completo: 'Sim: com heuristica admissivel, sempre encontra a solucao se existir.',
+    explicacao_otimo: 'Sim: usa f(n) = g(n) + h(n), combinando custo real e estimativa. Garante o caminho mais barato.',
+  },
+  'Gulosa h1': {
+    completo: false, otimo: false,
+    explicacao_completo: 'Nao: pode ficar presa seguindo a heuristica h1 (pecas fora do lugar).',
+    explicacao_otimo: 'Nao: usa apenas h1, ignorando quantos movimentos ja fez.',
+  },
+  'Gulosa h2': {
+    completo: false, otimo: false,
+    explicacao_completo: 'Nao: pode ficar presa seguindo a heuristica h2 (Manhattan).',
+    explicacao_otimo: 'Nao: usa apenas h2, ignorando quantos movimentos ja fez.',
+  },
+  'A* h1': {
+    completo: true, otimo: true,
+    explicacao_completo: 'Sim: h1 e admissivel (nunca superestima), entao A* sempre encontra solucao.',
+    explicacao_otimo: 'Sim: garante solucao com menos movimentos. Mas h1 e menos precisa, entao expande mais nos que h2.',
+  },
+  'A* h2': {
+    completo: true, otimo: true,
+    explicacao_completo: 'Sim: h2 e admissivel, entao A* sempre encontra solucao.',
+    explicacao_otimo: 'Sim: garante solucao otima. h2 (Manhattan) e mais precisa que h1, entao expande menos nos.',
+  },
+};
+
+function algoInfoHtml(name){
+  const info = ALGO_INFO[name];
+  if(!info) return '';
+
+  const checkC = info.completo ? '&#10004;' : '&#10008;';
+  const corC = info.completo ? 'var(--green)' : 'var(--red)';
+  let checkO, corO;
+  if(info.otimo === true){ checkO='&#10004;'; corO='var(--green)'; }
+  else if(info.otimo === 'parcial'){ checkO='&#9888;'; corO='var(--yellow)'; }
+  else { checkO='&#10008;'; corO='var(--red)'; }
+
+  return `<div style="margin-top:8px;padding:8px;background:rgba(0,0,0,.2);border-radius:8px;font-size:.8rem;line-height:1.6">`+
+    `<span style="color:${corC};font-size:1.1rem">${checkC}</span> <strong>Completo:</strong> ${info.explicacao_completo}<br>`+
+    `<span style="color:${corO};font-size:1.1rem">${checkO}</span> <strong>Otimo:</strong> ${info.explicacao_otimo}`+
+    `</div>`;
+}
+
+// ============ INIT ============
+fetch('/api/dados').then(r=>r.json()).then(d=>{
+  graphData=d.grafo; exData=d.exemplo; puzzleData=d.puzzle;
+  document.getElementById('origem').textContent=graphData.origem;
+  document.getElementById('destino').textContent=graphData.destino;
+  drawMap();
+  drawExMap();
+  drawPuzzle(puzzleData.estados[currentDepth]);
+  drawPlay();
+});
+
+// ============ TABS ============
+function switchTab(name,btn){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='cidades') drawMap();
+  if(name==='exemplo') drawExMap();
+}
+
+// ============ GENERIC GRAPH DRAWING ============
+function drawGraph(svgId, coords, data, state={}){
+  const svg=document.getElementById(svgId);
+  if(!data){svg.innerHTML='';return;}
+  let html='';
+  const {expandindo,visitados,fronteira,caminho}=Object.assign(
+    {expandindo:null,visitados:new Set(),fronteira:new Set(),caminho:[]},state);
+  const pathSet=new Set();
+  for(let i=0;i<caminho.length-1;i++){
+    pathSet.add([caminho[i],caminho[i+1]].sort().join('|'));
+  }
+
+  // Edges
+  for(const e of data.arestas){
+    const [x1,y1]=coords[e.de]||[0,0];
+    const [x2,y2]=coords[e.para]||[0,0];
+    const par=[e.de,e.para].sort().join('|');
+    const isPath=pathSet.has(par);
+    const color=isPath?'var(--path)':'#3a3a5c';
+    const w=isPath?4:1.5;
+    html+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="${w}" stroke-linecap="round"/>`;
+    const mx=(x1+x2)/2, my=(y1+y2)/2;
+    const dx=x2-x1, dy=y2-y1;
+    const len=Math.sqrt(dx*dx+dy*dy)||1;
+    const ox=-dy/len*12, oy=dx/len*12;
+    html+=`<text x="${mx+ox}" y="${my+oy}" fill="#888" font-size="12" text-anchor="middle" font-family="Consolas" font-weight="bold">${e.peso}</text>`;
+  }
+
+  // Nodes
+  for(const [city,[x,y]] of Object.entries(coords)){
+    if(!data.nos[city]) continue;
+    let color='#3a3a5c', r=8, glow='';
+    const isOrigin=city===data.origem;
+    const isDestino=city===data.destino;
+    const h=data.nos[city].h;
+
+    if(city===expandindo){
+      color='var(--expanding)';r=14;
+      glow=`<circle cx="${x}" cy="${y}" r="22" fill="none" stroke="var(--expanding)" stroke-width="2" opacity=".4" class="pulsing"/>`;
+    } else if(caminho.includes(city)){
+      color='var(--path)';r=12;
+    } else if(fronteira.has&&fronteira.has(city)){
+      color='var(--frontier)';r=10;
+    } else if(visitados.has&&visitados.has(city)){
+      color='var(--visited)';r=9;
+    } else if(isOrigin){
+      color='var(--green)';r=10;
+    } else if(isDestino){
+      color='var(--cyan)';r=10;
+    }
+
+    html+=glow;
+    html+=`<circle cx="${x}" cy="${y}" r="${r}" fill="${color}" style="transition:all .2s"/>`;
+    html+=`<text x="${x}" y="${y-r-8}" fill="var(--text)" font-size="13" text-anchor="middle" font-family="Segoe UI,sans-serif" font-weight="700">${city}</text>`;
+    html+=`<text x="${x}" y="${y-r-22}" fill="var(--muted)" font-size="10" text-anchor="middle" font-family="Consolas">h=${h}</text>`;
+  }
+
+  svg.innerHTML=html;
+}
+
+// ============ MAP DRAWING (Piaui) ============
+function drawMap(state={}){
+  const svg=document.getElementById('mapSvg');
+  if(!graphData){svg.innerHTML='';return;}
+  let html='';
+  const {expandindo,visitados,fronteira,caminho}=Object.assign(
+    {expandindo:null,visitados:new Set(),fronteira:new Set(),caminho:[]},state);
+  const pathSet=new Set();
+  for(let i=0;i<caminho.length-1;i++){
+    pathSet.add([caminho[i],caminho[i+1]].sort().join('|'));
+  }
+  for(const e of graphData.arestas){
+    const [x1,y1]=COORDS[e.de]||[0,0];
+    const [x2,y2]=COORDS[e.para]||[0,0];
+    const par=[e.de,e.para].sort().join('|');
+    const isPath=pathSet.has(par);
+    html+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${isPath?'var(--path)':'#3a3a5c'}" stroke-width="${isPath?3.5:1}" stroke-linecap="round"/>`;
+    const mx=(x1+x2)/2,my=(y1+y2)/2;
+    html+=`<text x="${mx}" y="${my}" fill="#666" font-size="8" text-anchor="middle" font-family="Consolas">${e.peso}</text>`;
+  }
+  for(const [city,[x,y]] of Object.entries(COORDS)){
+    let color='#3a3a5c',r=5,glow='';
+    if(city===expandindo){color='var(--expanding)';r=10;glow=`<circle cx="${x}" cy="${y}" r="16" fill="none" stroke="var(--expanding)" stroke-width="2" opacity=".4" class="pulsing"/>`;}
+    else if(caminho.includes(city)){color='var(--path)';r=8;}
+    else if(fronteira.has&&fronteira.has(city)){color='var(--frontier)';r=7;}
+    else if(visitados.has&&visitados.has(city)){color='var(--visited)';r=6;}
+    else if(graphData&&city===graphData.origem){color='var(--green)';r=6;}
+    else if(graphData&&city===graphData.destino){color='var(--blue)';r=6;}
+    html+=glow;
+    html+=`<circle cx="${x}" cy="${y}" r="${r}" fill="${color}" style="transition:all .15s"/>`;
+    html+=`<text x="${x}" y="${y-r-6}" fill="var(--text)" font-size="8" text-anchor="middle" font-family="Segoe UI,sans-serif" font-weight="600">${SHORT[city]||city}</text>`;
+  }
+  svg.innerHTML=html;
+}
+
+// ============ EXAMPLE MAP ============
+function drawExMap(state={}){ drawGraph('exSvg',EX_COORDS,exData,state); }
+
+// ============ EXAMPLE SEARCH ============
+async function runEx(name){
+  if(exAnimating) return;
+  exAnimating=true;
+  disableExBtns(true);
+  document.getElementById('exInfo').innerHTML=`<span style="color:var(--accent)">Executando ${name}...</span>`;
+
+  const res=await fetch(`/api/exemplo/${encodeURIComponent(name)}`).then(r=>r.json());
+  exResultsMap[name]=res;
+  updateExTable();
+
+  const hist=res.historico;
+  const speed=parseInt(document.getElementById('exSpeedSlider').value);
+
+  for(let i=0;i<hist.length;i++){
+    const h=hist[i];
+    drawExMap({
+      expandindo:h.expandindo,
+      visitados:new Set(h.visitados),
+      fronteira:new Set(h.fronteira),
+      caminho:[]
+    });
+    document.getElementById('exStatus').innerHTML=
+      `<strong>[${name}]</strong> Passo ${i+1}/${hist.length} &mdash; Expandindo: <strong>${h.expandindo}</strong>`;
+    document.getElementById('exInfo').innerHTML=
+      `Expandindo: <strong>${h.expandindo}</strong><br>`+
+      `Visitados: ${h.visitados.length} | Fronteira: ${h.fronteira.length}`;
+    await sleep(speed);
+  }
+
+  drawExMap({expandindo:null,visitados:new Set(),fronteira:new Set(),caminho:res.caminho});
+  document.getElementById('exStatus').innerHTML=`<strong>[${name}]</strong> Busca concluida!`;
+
+  const otimo=res.custo===11;
+  if(res.encontrou){
+    document.getElementById('exInfo').innerHTML=
+      `<strong>[${name}]</strong> Custo: ${res.custo} | Nos: ${res.nos_expandidos}<br>`+
+      `Rota: ${res.caminho.join(' &rarr; ')}<br>`+
+      (otimo?`<span style="color:var(--green)">Encontrou o caminho otimo!</span>`
+            :`<span style="color:var(--red)">NAO encontrou o otimo (11). Custo: ${res.custo} (+${res.custo-11})</span>`)+
+      algoInfoHtml(name);
+  }
+
+  exAnimating=false;
+  disableExBtns(false);
+}
+
+async function runAllEx(){
+  for(const name of ['BFS','DFS','Gulosa','A*']){
+    const res=await fetch(`/api/exemplo/${encodeURIComponent(name)}`).then(r=>r.json());
+    exResultsMap[name]=res;
+  }
+  updateExTable();
+  document.getElementById('exInfo').innerHTML='Todos executados. Compare os custos na tabela!';
+}
+
+function updateExTable(){
+  const tbody=document.getElementById('exResults');
+  tbody.innerHTML='';
+  for(const [name,r] of Object.entries(exResultsMap)){
+    const tr=document.createElement('tr');
+    tr.style.cursor='pointer';
+    const otimo=r.custo===11;
+    tr.onclick=()=>{
+      tbody.querySelectorAll('tr').forEach(t=>t.classList.remove('selected'));
+      tr.classList.add('selected');
+      drawExMap({expandindo:null,visitados:new Set(),fronteira:new Set(),caminho:r.caminho});
+      document.getElementById('exInfo').innerHTML=
+        `<strong>[${name}]</strong> Custo: ${r.custo}<br>Rota: ${r.caminho.join(' &rarr; ')}`;
+    };
+    tr.innerHTML=`<td>${name}</td><td>${r.encontrou?r.custo:'N/A'}</td><td>${r.nos_expandidos}</td>`+
+      `<td style="color:${otimo?'var(--green)':'var(--red)'};font-weight:700">${otimo?'SIM':'NAO'}</td>`;
+    tbody.appendChild(tr);
+  }
+}
+
+function disableExBtns(d){ document.querySelectorAll('#tab-exemplo .btn').forEach(b=>b.disabled=d); }
+
+// ============ CITY SEARCH ============
+async function runCity(name){
+  if(cityAnimating) return;
+  cityAnimating=true;
+  disableCityBtns(true);
+  document.getElementById('cityInfo').innerHTML=`<span style="color:var(--accent)">Executando ${name}...</span>`;
+
+  const res=await fetch(`/api/cidades/${encodeURIComponent(name)}`).then(r=>r.json());
+  cityResultsMap[name]=res;
+  updateCityTable();
+
+  const hist=res.historico;
+  const speed=parseInt(document.getElementById('speedSlider').value);
+
+  for(let i=0;i<hist.length;i++){
+    const h=hist[i];
+    drawMap({expandindo:h.expandindo,visitados:new Set(h.visitados),fronteira:new Set(h.fronteira),caminho:[]});
+    document.getElementById('cityStatus').innerHTML=
+      `<strong>[${name}]</strong> Passo ${i+1}/${hist.length} &mdash; Expandindo: <strong>${h.expandindo}</strong>`;
+    document.getElementById('cityInfo').innerHTML=
+      `Expandindo: <strong>${h.expandindo}</strong><br>Visitados: ${h.visitados.length} | Fronteira: ${h.fronteira.length}`;
+    await sleep(speed);
+  }
+
+  drawMap({expandindo:null,visitados:new Set(),fronteira:new Set(),caminho:res.caminho});
+  document.getElementById('cityStatus').innerHTML=`<strong>[${name}]</strong> Busca concluida!`;
+  if(res.encontrou){
+    document.getElementById('cityInfo').innerHTML=
+      `<strong>[${name}]</strong> Custo: ${res.custo} km | Nos: ${res.nos_expandidos}<br>`+
+      `Rota: ${res.caminho.join(' &rarr; ')}`+
+      algoInfoHtml(name);
+  } else {
+    document.getElementById('cityInfo').innerHTML=`<strong>[${name}]</strong> Solucao nao encontrada.`+algoInfoHtml(name);
+  }
+  cityAnimating=false;
+  disableCityBtns(false);
+}
+
+async function runAllCities(){
+  for(const name of ['BFS','DFS','Gulosa','A*']){
+    const res=await fetch(`/api/cidades/${encodeURIComponent(name)}`).then(r=>r.json());
+    cityResultsMap[name]=res;
+  }
+  updateCityTable();
+  document.getElementById('cityInfo').innerHTML='Todos executados. Clique em uma linha para ver a rota.';
+}
+
+function updateCityTable(){
+  const tbody=document.getElementById('cityResults');
+  tbody.innerHTML='';
+  for(const [name,r] of Object.entries(cityResultsMap)){
+    const tr=document.createElement('tr');
+    tr.style.cursor='pointer';
+    tr.onclick=()=>{
+      tbody.querySelectorAll('tr').forEach(t=>t.classList.remove('selected'));
+      tr.classList.add('selected');
+      drawMap({expandindo:null,visitados:new Set(),fronteira:new Set(),caminho:r.caminho});
+      if(r.encontrou) document.getElementById('cityInfo').innerHTML=
+        `<strong>[${name}]</strong> Custo: ${r.custo} km | Nos: ${r.nos_expandidos}<br><br>Rota: ${r.caminho.join(' &rarr; ')}`;
+    };
+    tr.innerHTML=`<td>${name}</td><td>${r.encontrou?r.custo:'N/A'}</td><td>${r.nos_expandidos}</td><td>${r.tempo}ms</td>`;
+    tbody.appendChild(tr);
+  }
+}
+
+function disableCityBtns(d){ document.querySelectorAll('#tab-cidades .btn').forEach(b=>b.disabled=d); }
+
+// ============ PUZZLE ============
+function drawPuzzle(state){
+  const board=document.getElementById('puzzleBoard');
+  const obj=puzzleData?puzzleData.objetivo:[1,2,3,4,5,6,7,8,0];
+  board.innerHTML='';
+  for(let i=0;i<9;i++){
+    const val=state[i];
+    const div=document.createElement('div');
+    div.className='puzzle-cell';
+    if(val===0) div.classList.add('empty');
+    else if(val===obj[i]){div.classList.add('correct');div.textContent=val;}
+    else{div.classList.add('wrong');div.textContent=val;}
+    board.appendChild(div);
+  }
+}
+
+function setDepth(d,btn){
+  currentDepth=d;
+  document.querySelectorAll('.radio-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  puzzleResultsMap={};updatePuzzleTable();
+  drawPuzzle(puzzleData.estados[d]);
+  document.getElementById('puzzleStep').textContent=`Estado inicial (d=${d})`;
+  document.getElementById('puzzleInfo').textContent='Selecione um algoritmo para executar.';
+  document.getElementById('btnAnimSol').disabled=true;
+  currentSolution=null;
+}
+
+function resetPuzzle(){
+  puzzleAnimating=false;
+  drawPuzzle(puzzleData.estados[currentDepth]);
+  document.getElementById('puzzleStep').textContent=`Estado inicial (d=${currentDepth})`;
+}
+
+async function runPuzzle(name){
+  if(puzzleAnimating) return;
+  puzzleAnimating=true;
+  disablePuzzleBtns(true);
+  document.getElementById('puzzleInfo').innerHTML=`<span style="color:var(--accent)">Executando ${name} (d=${currentDepth})...</span>`;
+  document.getElementById('btnAnimSol').disabled=true;
+
+  const res=await fetch(`/api/puzzle/${encodeURIComponent(name)}/${currentDepth}`).then(r=>r.json());
+  puzzleResultsMap[name]=res;
+  updatePuzzleTable();
+
+  const hist=res.historico;
+  const speed=parseInt(document.getElementById('pSpeedSlider').value);
+
+  for(let i=0;i<hist.length;i++){
+    const h=hist[i];
+    if(Array.isArray(h.expandindo)&&h.expandindo.length===9) drawPuzzle(h.expandindo);
+    document.getElementById('puzzleStep').innerHTML=
+      `<strong>[${name}]</strong> Buscando... Passo ${i+1}/${hist.length}`;
+    document.getElementById('puzzleInfo').innerHTML=
+      `Nos expandidos: ~${i+1} | Visitados: ${h.n_visitados} | Fronteira: ${h.n_fronteira}`;
+    if(!puzzleAnimating) break;
+    await sleep(speed);
+  }
+
+  if(res.encontrou){
+    drawPuzzle(res.caminho[res.caminho.length-1]);
+    document.getElementById('puzzleStep').innerHTML=
+      `<strong>[${name}]</strong> Solucao encontrada! (${res.custo} movs, ${res.nos_expandidos} nos)`;
+    document.getElementById('puzzleInfo').innerHTML=
+      `<strong>[${name}]</strong> d=${currentDepth}<br>`+
+      `Movimentos: ${res.custo} | Nos: ${res.nos_expandidos} | Tempo: ${res.tempo}ms<br>`+
+      `Clique "Animar Solucao" para ver o caminho.`+
+      algoInfoHtml(name);
+    currentSolution=res.caminho;
+    document.getElementById('btnAnimSol').disabled=false;
+  } else {
+    document.getElementById('puzzleStep').innerHTML=
+      `<strong>[${name}]</strong> Nao encontrou solucao (${res.nos_expandidos} nos)`;
+    document.getElementById('puzzleInfo').innerHTML=
+      `<strong>[${name}]</strong> Nao encontrou solucao em ${res.nos_expandidos} nos.`+
+      algoInfoHtml(name);
+  }
+  puzzleAnimating=false;
+  disablePuzzleBtns(false);
+}
+
+async function runAllPuzzle(){
+  for(const name of ['BFS','DFS','Gulosa h1','Gulosa h2','A* h1','A* h2']){
+    const res=await fetch(`/api/puzzle/${encodeURIComponent(name)}/${currentDepth}`).then(r=>r.json());
+    puzzleResultsMap[name]=res;
+  }
+  updatePuzzleTable();
+  document.getElementById('puzzleInfo').innerHTML='Todos os algoritmos executados.';
+}
+
+async function animateSolution(){
+  if(!currentSolution||puzzleAnimating) return;
+  puzzleAnimating=true;disablePuzzleBtns(true);
+  const total=currentSolution.length;
+  for(let i=0;i<total;i++){
+    drawPuzzle(currentSolution[i]);
+    document.getElementById('puzzleStep').textContent=i===0?'Estado inicial':`Movimento ${i}/${total-1}`;
+    if(!puzzleAnimating) break;
+    await sleep(total<=10?400:(total<=20?200:100));
+  }
+  document.getElementById('puzzleStep').textContent='Solucao completa!';
+  puzzleAnimating=false;disablePuzzleBtns(false);
+}
+
+function updatePuzzleTable(){
+  const tbody=document.getElementById('puzzleResults');
+  tbody.innerHTML='';
+  for(const [name,r] of Object.entries(puzzleResultsMap)){
+    const tr=document.createElement('tr');
+    tr.style.cursor='pointer';
+    tr.onclick=()=>{
+      tbody.querySelectorAll('tr').forEach(t=>t.classList.remove('selected'));
+      tr.classList.add('selected');
+      if(r.encontrou){
+        currentSolution=r.caminho;
+        document.getElementById('btnAnimSol').disabled=false;
+        drawPuzzle(r.caminho[r.caminho.length-1]);
+        document.getElementById('puzzleInfo').innerHTML=
+          `<strong>[${name}]</strong> Movimentos: ${r.custo} | Nos: ${r.nos_expandidos} | Tempo: ${r.tempo}ms`;
+      }
+    };
+    tr.innerHTML=`<td>${name}</td><td>${r.encontrou?r.custo:'N/A'}</td><td>${r.nos_expandidos}</td><td>${r.tempo}ms</td>`;
+    tbody.appendChild(tr);
+  }
+}
+
+function disablePuzzleBtns(d){ document.querySelectorAll('#tab-puzzle .btn').forEach(b=>b.disabled=d); }
+
+// ============ JOGAR PUZZLE ============
+let playState=[1,2,3,4,5,6,7,8,0];
+let playMoves=0, playTimer=null, playSeconds=0, playBest=null, playActive=false;
+
+function drawPlay(){
+  const board=document.getElementById('playBoard');
+  const obj=[1,2,3,4,5,6,7,8,0];
+  const emptyIdx=playState.indexOf(0);
+  const movable=getMovable(emptyIdx);
+  board.innerHTML='';
+  for(let i=0;i<9;i++){
+    const val=playState[i];
+    const div=document.createElement('div');
+    div.className='play-cell';
+    if(val===0){
+      div.classList.add('empty');
+    } else {
+      if(val===obj[i]) div.classList.add('correct');
+      else div.classList.add('wrong');
+      if(movable.includes(i)) div.classList.add('movable');
+      div.textContent=val;
+      div.onclick=()=>movePlay(i);
+    }
+    board.appendChild(div);
+  }
+}
+
+function getMovable(emptyIdx){
+  const r=Math.floor(emptyIdx/3), c=emptyIdx%3;
+  const adj=[];
+  if(r>0) adj.push(emptyIdx-3);
+  if(r<2) adj.push(emptyIdx+3);
+  if(c>0) adj.push(emptyIdx-1);
+  if(c<2) adj.push(emptyIdx+1);
+  return adj;
+}
+
+function movePlay(idx){
+  if(!playActive) return;
+  const emptyIdx=playState.indexOf(0);
+  const movable=getMovable(emptyIdx);
+  if(!movable.includes(idx)) return;
+
+  playState[emptyIdx]=playState[idx];
+  playState[idx]=0;
+  playMoves++;
+  document.getElementById('playMoves').textContent=playMoves;
+  drawPlay();
+
+  const obj=[1,2,3,4,5,6,7,8,0];
+  if(playState.every((v,i)=>v===obj[i])){
+    playActive=false;
+    clearInterval(playTimer);
+    document.getElementById('playMsg').className='play-msg win';
+    document.getElementById('playMsg').textContent=`Parabens! Resolveu em ${playMoves} movimentos e ${playSeconds}s!`;
+    if(playBest===null||playMoves<playBest){
+      playBest=playMoves;
+      document.getElementById('playBest').textContent=playBest;
+    }
+  }
+}
+
+function shufflePlay(n){
+  playState=[1,2,3,4,5,6,7,8,0];
+  let prev=-1;
+  for(let i=0;i<n;i++){
+    const emptyIdx=playState.indexOf(0);
+    const movable=getMovable(emptyIdx).filter(m=>m!==prev);
+    const pick=movable[Math.floor(Math.random()*movable.length)];
+    prev=emptyIdx;
+    playState[emptyIdx]=playState[pick];
+    playState[pick]=0;
+  }
+  playMoves=0;
+  playSeconds=0;
+  playActive=true;
+  document.getElementById('playMoves').textContent='0';
+  document.getElementById('playTime').textContent='0s';
+  document.getElementById('playMsg').className='play-msg';
+  document.getElementById('playMsg').textContent=`Embaralhado com ${n} movimentos. Boa sorte!`;
+  clearInterval(playTimer);
+  playTimer=setInterval(()=>{
+    playSeconds++;
+    document.getElementById('playTime').textContent=playSeconds+'s';
+  },1000);
+  drawPlay();
+}
+
+function resetPlay(){
+  clearInterval(playTimer);
+  playState=[1,2,3,4,5,6,7,8,0];
+  playMoves=0;playSeconds=0;playActive=false;
+  document.getElementById('playMoves').textContent='0';
+  document.getElementById('playTime').textContent='0s';
+  document.getElementById('playMsg').className='play-msg';
+  document.getElementById('playMsg').textContent='Escolha uma dificuldade para embaralhar!';
+  drawPlay();
+}
+
+async function solvePlay(){
+  if(!playActive) return;
+  playActive=false;
+  clearInterval(playTimer);
+  document.getElementById('playMsg').className='play-msg';
+  document.getElementById('playMsg').textContent='Resolvendo com A* (Manhattan)...';
+
+  const res=await fetch(`/api/puzzle-solve/${playState.join(',')}`).then(r=>r.json());
+
+  if(res.encontrou){
+    document.getElementById('playMsg').textContent=`A* resolveu em ${res.custo} movimentos! Assistindo...`;
+    for(let i=0;i<res.caminho.length;i++){
+      playState=[...res.caminho[i]];
+      drawPlay();
+      await sleep(300);
+    }
+    document.getElementById('playMsg').className='play-msg win';
+    document.getElementById('playMsg').textContent=`Resolvido pelo A* em ${res.custo} movimentos (${res.nos_expandidos} nos expandidos)`;
+  } else {
+    document.getElementById('playMsg').textContent='Nao foi possivel resolver.';
+  }
+}
+
+// ============ UTILS ============
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+</script>
+
+</body>
+</html>

@@ -9,12 +9,13 @@ import time
 
 
 class ResultadoBusca:
-    def __init__(self, caminho, custo, nos_expandidos, tempo, encontrou):
+    def __init__(self, caminho, custo, nos_expandidos, tempo, encontrou, historico=None):
         self.caminho = caminho
         self.custo = custo
         self.nos_expandidos = nos_expandidos
         self.tempo = tempo
         self.encontrou = encontrou
+        self.historico = historico or []
 
     def __str__(self):
         if not self.encontrou:
@@ -27,13 +28,14 @@ class ResultadoBusca:
         )
 
 
-def bfs(estado_inicial, objetivo, sucessores, custo_aresta=None):
+def bfs(estado_inicial, objetivo, sucessores, custo_aresta=None, gravar=False):
     """Busca em Largura (Breadth-First Search) com fila FIFO."""
-    inicio = time.time()
+    inicio = time.perf_counter()
     nos_expandidos = 0
+    historico = []
 
     if estado_inicial == objetivo:
-        return ResultadoBusca([estado_inicial], 0, 0, time.time() - inicio, True)
+        return ResultadoBusca([estado_inicial], 0, 0, time.perf_counter() - inicio, True)
 
     fronteira = deque()
     fronteira.append((estado_inicial, [estado_inicial], 0))
@@ -43,27 +45,37 @@ def bfs(estado_inicial, objetivo, sucessores, custo_aresta=None):
         estado, caminho, custo = fronteira.popleft()
         nos_expandidos += 1
 
+        if gravar:
+            fronteira_estados = [f[0] for f in fronteira]
+            historico.append({
+                "expandindo": estado,
+                "caminho_atual": list(caminho),
+                "visitados": set(visitados),
+                "fronteira": list(fronteira_estados),
+            })
+
         for vizinho, peso in sucessores(estado):
             if vizinho not in visitados:
                 novo_custo = custo + (peso if custo_aresta is None else custo_aresta(estado, vizinho))
                 novo_caminho = caminho + [vizinho]
 
                 if vizinho == objetivo:
-                    return ResultadoBusca(novo_caminho, novo_custo, nos_expandidos, time.time() - inicio, True)
+                    return ResultadoBusca(novo_caminho, novo_custo, nos_expandidos, time.perf_counter() - inicio, True, historico)
 
                 visitados.add(vizinho)
                 fronteira.append((vizinho, novo_caminho, novo_custo))
 
-    return ResultadoBusca([], 0, nos_expandidos, time.time() - inicio, False)
+    return ResultadoBusca([], 0, nos_expandidos, time.perf_counter() - inicio, False, historico)
 
 
-def dfs(estado_inicial, objetivo, sucessores, custo_aresta=None, limite=None):
+def dfs(estado_inicial, objetivo, sucessores, custo_aresta=None, limite=None, gravar=False):
     """Busca em Profundidade (Depth-First Search) com pilha LIFO e controle de visitados."""
-    inicio = time.time()
+    inicio = time.perf_counter()
     nos_expandidos = 0
+    historico = []
 
     if estado_inicial == objetivo:
-        return ResultadoBusca([estado_inicial], 0, 0, time.time() - inicio, True)
+        return ResultadoBusca([estado_inicial], 0, 0, time.perf_counter() - inicio, True)
 
     fronteira = [(estado_inicial, [estado_inicial], 0)]
     visitados = {estado_inicial}
@@ -71,6 +83,15 @@ def dfs(estado_inicial, objetivo, sucessores, custo_aresta=None, limite=None):
     while fronteira:
         estado, caminho, custo = fronteira.pop()
         nos_expandidos += 1
+
+        if gravar:
+            fronteira_estados = [f[0] for f in fronteira]
+            historico.append({
+                "expandindo": estado,
+                "caminho_atual": list(caminho),
+                "visitados": set(visitados),
+                "fronteira": list(fronteira_estados),
+            })
 
         if limite is not None and len(caminho) - 1 >= limite:
             continue
@@ -81,19 +102,20 @@ def dfs(estado_inicial, objetivo, sucessores, custo_aresta=None, limite=None):
                 novo_caminho = caminho + [vizinho]
 
                 if vizinho == objetivo:
-                    return ResultadoBusca(novo_caminho, novo_custo, nos_expandidos, time.time() - inicio, True)
+                    return ResultadoBusca(novo_caminho, novo_custo, nos_expandidos, time.perf_counter() - inicio, True, historico)
 
                 visitados.add(vizinho)
                 fronteira.append((vizinho, novo_caminho, novo_custo))
 
-    return ResultadoBusca([], 0, nos_expandidos, time.time() - inicio, False)
+    return ResultadoBusca([], 0, nos_expandidos, time.perf_counter() - inicio, False, historico)
 
 
-def busca_gulosa(estado_inicial, objetivo, sucessores, heuristica):
+def busca_gulosa(estado_inicial, objetivo, sucessores, heuristica, gravar=False):
     """Busca Gulosa (Greedy Best-First Search) com f(n) = h(n)."""
-    inicio = time.time()
+    inicio = time.perf_counter()
     nos_expandidos = 0
     contador = 0
+    historico = []
 
     fronteira = []
     heapq.heappush(fronteira, (heuristica(estado_inicial), contador, estado_inicial, [estado_inicial], 0))
@@ -104,8 +126,17 @@ def busca_gulosa(estado_inicial, objetivo, sucessores, heuristica):
         _, _, estado, caminho, custo = heapq.heappop(fronteira)
         nos_expandidos += 1
 
+        if gravar:
+            fronteira_estados = [f[2] for f in fronteira]
+            historico.append({
+                "expandindo": estado,
+                "caminho_atual": list(caminho),
+                "visitados": set(visitados),
+                "fronteira": list(fronteira_estados),
+            })
+
         if estado == objetivo:
-            return ResultadoBusca(caminho, custo, nos_expandidos, time.time() - inicio, True)
+            return ResultadoBusca(caminho, custo, nos_expandidos, time.perf_counter() - inicio, True, historico)
 
         for vizinho, peso in sucessores(estado):
             if vizinho not in visitados:
@@ -116,14 +147,15 @@ def busca_gulosa(estado_inicial, objetivo, sucessores, heuristica):
                 heapq.heappush(fronteira, (h, contador, vizinho, novo_caminho, novo_custo))
                 contador += 1
 
-    return ResultadoBusca([], 0, nos_expandidos, time.time() - inicio, False)
+    return ResultadoBusca([], 0, nos_expandidos, time.perf_counter() - inicio, False, historico)
 
 
-def busca_a_estrela(estado_inicial, objetivo, sucessores, heuristica):
+def busca_a_estrela(estado_inicial, objetivo, sucessores, heuristica, gravar=False):
     """Busca A* com f(n) = g(n) + h(n)."""
-    inicio = time.time()
+    inicio = time.perf_counter()
     nos_expandidos = 0
     contador = 0
+    historico = []
 
     g_custos = {estado_inicial: 0}
     fronteira = []
@@ -135,8 +167,17 @@ def busca_a_estrela(estado_inicial, objetivo, sucessores, heuristica):
         nos_expandidos += 1
         g_atual = g_custos[estado]
 
+        if gravar:
+            fronteira_estados = [fr[2] for fr in fronteira]
+            historico.append({
+                "expandindo": estado,
+                "caminho_atual": list(caminho),
+                "visitados": set(g_custos.keys()),
+                "fronteira": list(fronteira_estados),
+            })
+
         if estado == objetivo:
-            return ResultadoBusca(caminho, g_atual, nos_expandidos, time.time() - inicio, True)
+            return ResultadoBusca(caminho, g_atual, nos_expandidos, time.perf_counter() - inicio, True, historico)
 
         for vizinho, peso in sucessores(estado):
             novo_g = g_atual + peso
@@ -149,4 +190,4 @@ def busca_a_estrela(estado_inicial, objetivo, sucessores, heuristica):
                 heapq.heappush(fronteira, (f_novo, contador, vizinho, novo_caminho))
                 contador += 1
 
-    return ResultadoBusca([], 0, nos_expandidos, time.time() - inicio, False)
+    return ResultadoBusca([], 0, nos_expandidos, time.perf_counter() - inicio, False, historico)
